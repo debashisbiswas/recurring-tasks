@@ -12,5 +12,8 @@
     "rimraf": "^3.0.2",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3"
+  },
+  "dependencies": {
+    "@notionhq/client": "^1.0.4"
   }
 }
