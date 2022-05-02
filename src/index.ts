@@ -1,5 +1,7 @@
 import { Client } from '@notionhq/client'
-import { UpdatePageResponse } from '@notionhq/client/build/src/api-endpoints'
+import {
+    QueryDatabaseResponse, UpdatePageResponse
+} from '@notionhq/client/build/src/api-endpoints'
 import { CONFIG } from './config'
 
 const notion = new Client({ auth: CONFIG.NOTION_ID })
@@ -10,6 +12,40 @@ const wrong_type_msg = (prop_name: string) => {
 
 const prop_not_found_msg = (prop_name: string) => {
     return `No ${prop_name} property. Skipping...`
+}
+
+type DatabaseItem = QueryDatabaseResponse['results'][number]
+
+// TODO: "type" should be a specific type with possible values
+const getProperty = (name: string, item: DatabaseItem) => {
+    if (!('properties' in item)) {
+        return
+    }
+
+    if (name in item.properties) {
+        const props = item.properties[name]
+        switch (props.type) {
+            case 'title':
+                return props.title[0].plain_text
+            case 'date':
+                if (props.date) {
+                    return props.date.start
+                }
+                console.log('Null date property')
+                break
+            case 'number':
+                if (props.number) {
+                    return props.number
+                }
+                console.log('Null number property')
+                break
+            default:
+                console.log(wrong_type_msg(name))
+        }
+    }
+    else {
+        console.log(prop_not_found_msg(name))
+    }
 }
 
 const main = async () => {
@@ -25,63 +61,16 @@ const main = async () => {
 
     const api_calls: Promise<UpdatePageResponse>[] = []
     for (const item of checkedItems.results) {
-        let name = ''
-        let old_date = ''
-        let interval = 0
-        if (!('properties' in item)) {
-            continue
-        }
+        const name     = getProperty('Name', item)
+        const old_date = getProperty('Do Date', item)
+        const interval = getProperty('Interval', item)
 
-        // TODO: lots of repeated code in here. Make this a function.
-        let current_prop = 'Name'
-        if (current_prop in item.properties) {
-            const name_prop = item.properties[current_prop]
-            if (name_prop.type == 'title') {
-                name = name_prop.title[0].plain_text
-            }
-            else {
-                console.log(wrong_type_msg(current_prop))
-                continue
-            }
-        }
-        else {
-            console.log(prop_not_found_msg(current_prop))
-            continue
-        }
-
-        current_prop = 'Do Date'
-        if (current_prop in item.properties) {
-            const date_prop = item.properties[current_prop]
-            if (date_prop.type == 'date') {
-                if (date_prop.date) {
-                    old_date = date_prop.date.start
-                }
-            }
-            else {
-                console.log(wrong_type_msg(current_prop))
-                continue
-            }
-        }
-        else {
-            console.log(prop_not_found_msg(current_prop))
-            continue
-        }
-
-        current_prop = 'Interval'
-        if (current_prop in item.properties) {
-            const prop = item.properties[current_prop]
-            if (prop.type == 'number') {
-                if (prop.number) {
-                    interval = prop.number
-                }
-            }
-            else {
-                console.log(wrong_type_msg(current_prop))
-                continue
-            }
-        }
-        else {
-            console.log(prop_not_found_msg(current_prop))
+        // TODO: there must be a better way to handle this section
+        if (!(name && old_date && interval
+              && typeof(name) === 'string'
+              && typeof(old_date) === 'string'
+              && typeof(interval) === 'number'
+        )) {
             continue
         }
 
