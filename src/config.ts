@@ -3,7 +3,7 @@ import 'dotenv/config'
 
 const verifyString = function (input: string | undefined): string {
     if (!input) {
-        console.log("Incomplete config. Exiting...")
+        console.log('Incomplete config. Exiting...')
         process.exit(1)
     }
     return input
