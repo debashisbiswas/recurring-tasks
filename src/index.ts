@@ -27,12 +27,8 @@ const getProperty = (name: string, item: DatabaseItem) => {
         switch (props.type) {
             case 'title':
                 return props.title[0].plain_text
-            case 'date':
-                if (props.date) {
-                    return props.date.start
-                }
-                console.log('Null date property')
-                break
+            case 'last_edited_time':
+                return props.last_edited_time
             case 'number':
                 if (props.number) {
                     return props.number
@@ -62,22 +58,26 @@ const main = async () => {
     const api_calls: Promise<UpdatePageResponse>[] = []
     for (const item of checkedItems.results) {
         const name     = getProperty('Name', item)
-        const old_date = getProperty('Do Date', item)
+        const last_edited = getProperty('Last Edited', item)
         const interval = getProperty('Interval', item)
 
         // TODO: there must be a better way to handle this section
-        if (!(name && old_date && interval
+        if (!(name && last_edited && interval
               && typeof(name) === 'string'
-              && typeof(old_date) === 'string'
+              && typeof(last_edited) === 'string'
               && typeof(interval) === 'number'
         )) {
+            console.log('Shape mismatch, skipping')
             continue
         }
 
+        const last_edited_date = new Date(last_edited)
         const call = new Promise<UpdatePageResponse>((resolve) => {
-            const new_date = new Date(old_date)
+            const new_date = new Date(last_edited)
             new_date.setDate(new_date.getDate() + interval)
             console.log(`Handling ${name}`)
+            console.log(`--> Completed : ${last_edited_date.toString()}`)
+            console.log(`--> New date  : ${new_date.toString()}`)
 
             resolve(
                 notion.pages.update({
